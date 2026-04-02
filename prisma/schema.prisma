@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STAGIAIRE
+  MENTOR
+  TUTEUR
+  ADMIN
+  ENTREPRISE
+}
+
+enum AdminAction {
+  USER_STATUS_UPDATED
+  USER_ROLE_UPDATED
+  USER_UPDATED
+  USER_SOFT_DELETED
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  passwordHash     String
+  prenom           String
+  nom              String
+  telephone        String?
+  ecole            String?
+  niveauEtudes     String?
+  entreprise       String?
+  poste            String?
+  bio              String?
+  role             UserRole
+  isActive         Boolean          @default(true)
+  consentGiven     Boolean          @default(false)
+  consentDate      DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  refreshTokens    RefreshToken[]
+  adminActions     AdminAuditLog[]  @relation("AdminActor")
+  targetedByAdmins AdminAuditLog[]  @relation("AdminTarget")
+
+  @@index([email])
+  @@index([isActive, deletedAt])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRevoked])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model AdminAuditLog {
+  id           String      @id @default(uuid())
+  adminId      String
+  targetUserId String
+  action       AdminAction
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+  admin        User        @relation("AdminActor", fields: [adminId], references: [id], onDelete: Cascade)
+  targetUser   User        @relation("AdminTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@map("admin_audit_logs")
+}
