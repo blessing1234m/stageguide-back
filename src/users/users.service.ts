@@ -8,7 +8,7 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Finds a user by email address.
+   * Recherche un utilisateur par adresse email.
    */
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
@@ -20,7 +20,7 @@ export class UsersService {
   }
 
   /**
-   * Finds an active user by identifier.
+   * Recherche un utilisateur actif par identifiant.
    */
   async findById(id: string): Promise<User | null> {
     return this.prisma.user.findFirst({
@@ -32,7 +32,7 @@ export class UsersService {
   }
 
   /**
-   * Creates a new platform user with a pre-hashed password.
+   * Cree un nouvel utilisateur avec un mot de passe deja hache.
    */
   async create(data: {
     email: string;
@@ -69,7 +69,7 @@ export class UsersService {
   }
 
   /**
-   * Replaces the user's password with a newly hashed value.
+   * Remplace le mot de passe de l utilisateur par une nouvelle valeur hachee.
    */
   async updatePassword(userId: string, plainPassword: string): Promise<User> {
     const passwordHash = await bcrypt.hash(plainPassword, 12);

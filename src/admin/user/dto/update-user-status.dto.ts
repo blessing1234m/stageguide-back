@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { IsBoolean } from 'class-validator';
 
 export class UpdateUserStatusDto {
   @ApiProperty({

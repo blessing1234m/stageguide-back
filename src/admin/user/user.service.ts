@@ -6,15 +6,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AdminAction, Prisma, User } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { UserRole } from '../users/enums/user-role.enum';
+import { PrismaService } from '../../prisma/prisma.service';
+import { UserRole } from '../../users/enums/user-role.enum';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
 @Injectable()
-export class AdminService {
+export class AdminUserService {
   constructor(private readonly prisma: PrismaService) {}
 
   private sanitizeUser(user: User): SafeUser {
@@ -88,9 +88,6 @@ export class AdminService {
     });
   }
 
-  /**
-   * Returns paginated users with optional search and filters.
-   */
   async findAllUsers(query: ListUsersQueryDto): Promise<{
     data: SafeUser[];
     total: number;
@@ -135,16 +132,10 @@ export class AdminService {
     };
   }
 
-  /**
-   * Returns a single user account by identifier.
-   */
   async findUserById(userId: string): Promise<SafeUser> {
     return this.sanitizeUser(await this.getManagedUserOrThrow(userId));
   }
 
-  /**
-   * Updates a user's active status and revokes live refresh tokens on suspension.
-   */
   async updateUserStatus(
     adminId: string,
     userId: string,
@@ -177,9 +168,6 @@ export class AdminService {
     return this.sanitizeUser(updatedUser);
   }
 
-  /**
-   * Updates a user's application role.
-   */
   async updateUserRole(
     adminId: string,
     userId: string,
@@ -200,9 +188,6 @@ export class AdminService {
     return this.sanitizeUser(updatedUser);
   }
 
-  /**
-   * Updates editable user profile fields from the admin area.
-   */
   async updateUser(
     adminId: string,
     userId: string,
@@ -280,10 +265,10 @@ export class AdminService {
     return this.sanitizeUser(updatedUser);
   }
 
-  /**
-   * Soft deletes a user account and revokes every active refresh token.
-   */
-  async softDeleteUser(adminId: string, userId: string): Promise<{ message: string }> {
+  async softDeleteUser(
+    adminId: string,
+    userId: string,
+  ): Promise<{ message: string }> {
     const existingUser = await this.getManagedUserOrThrow(userId);
 
     if (adminId === existingUser.id) {

@@ -15,24 +15,24 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { UserRole } from '../users/enums/user-role.enum';
-import { AdminService } from './admin.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { UserRole } from '../../users/enums/user-role.enum';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { AdminUserService } from './user.service';
 
 @ApiTags('admin')
 @ApiBearerAuth()
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
-export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+export class AdminUserController {
+  constructor(private readonly adminUserService: AdminUserService) {}
 
   @ApiOperation({ summary: 'Liste tous les utilisateurs' })
   @ApiResponse({
@@ -41,7 +41,7 @@ export class AdminController {
   })
   @Get('users')
   async findAllUsers(@Query() query: ListUsersQueryDto) {
-    return this.adminService.findAllUsers(query);
+    return this.adminUserService.findAllUsers(query);
   }
 
   @ApiOperation({ summary: 'Recupere le detail d un utilisateur' })
@@ -55,7 +55,7 @@ export class AdminController {
   })
   @Get('users/:id')
   async findUserById(@Param('id') userId: string) {
-    return this.adminService.findUserById(userId);
+    return this.adminUserService.findUserById(userId);
   }
 
   @ApiOperation({ summary: 'Suspend ou reactive un utilisateur' })
@@ -73,7 +73,7 @@ export class AdminController {
     @Body() updateUserStatusDto: UpdateUserStatusDto,
     @CurrentUser() currentUser: { id: string },
   ) {
-    return this.adminService.updateUserStatus(
+    return this.adminUserService.updateUserStatus(
       currentUser.id,
       userId,
       updateUserStatusDto.isActive,
@@ -95,7 +95,7 @@ export class AdminController {
     @Body() updateUserRoleDto: UpdateUserRoleDto,
     @CurrentUser() currentUser: { id: string },
   ) {
-    return this.adminService.updateUserRole(
+    return this.adminUserService.updateUserRole(
       currentUser.id,
       userId,
       updateUserRoleDto.role,
@@ -117,7 +117,11 @@ export class AdminController {
     @Body() updateUserDto: UpdateUserDto,
     @CurrentUser() currentUser: { id: string },
   ) {
-    return this.adminService.updateUser(currentUser.id, userId, updateUserDto);
+    return this.adminUserService.updateUser(
+      currentUser.id,
+      userId,
+      updateUserDto,
+    );
   }
 
   @ApiOperation({ summary: 'Supprime logiquement un utilisateur' })
@@ -134,6 +138,6 @@ export class AdminController {
     @Param('id') userId: string,
     @CurrentUser() currentUser: { id: string },
   ) {
-    return this.adminService.softDeleteUser(currentUser.id, userId);
+    return this.adminUserService.softDeleteUser(currentUser.id, userId);
   }
 }

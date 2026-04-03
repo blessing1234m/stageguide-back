@@ -9,7 +9,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { UserRole } from '../../users/enums/user-role.enum';
+import { UserRole } from '../../../users/enums/user-role.enum';
 
 export class ListUsersQueryDto {
   @ApiPropertyOptional({

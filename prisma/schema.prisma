@@ -78,3 +78,17 @@ model AdminAuditLog {
   @@index([targetUserId, createdAt])
   @@map("admin_audit_logs")
 }
+
+model Partner {
+  id                 String   @id @default(uuid())
+  nomEntreprise      String
+  ville              String
+  email              String   @unique
+  lienSiteWeb        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([nomEntreprise])
+  @@index([ville])
+  @@map("partners")
+}

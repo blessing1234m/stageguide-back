@@ -28,9 +28,7 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * Validates credentials without leaking whether the email or password failed.
-   */
+  // Valide les informations de connexion et verifie que le compte est actif.
   async validateUser(email: string, password: string): Promise<SafeUser> {
     const user = await this.usersService.findByEmail(email);
 
@@ -48,9 +46,7 @@ export class AuthService {
     return safeUser;
   }
 
-  /**
-   * Registers a new user and immediately issues an authenticated session.
-   */
+  // Enregistre un nouvel utilisateur et cree sa session initiale.
   async register(registerDto: RegisterDto) {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
 
@@ -78,24 +74,18 @@ export class AuthService {
     return this.createSession(user);
   }
 
-  /**
-   * Authenticates a user and returns a fresh access/refresh token pair.
-   */
+  // Connecte un utilisateur existant et cree une session.
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     return this.createSession(user);
   }
 
-  /**
-   * Issues a session for an already authenticated user.
-   */
+  // Cree une session pour un utilisateur deja authentifie par une strategie externe.
   async loginUser(user: SafeUser) {
     return this.createSession(user);
   }
 
-  /**
-   * Rotates a refresh token after verifying its signature and hashed database record.
-   */
+  // Renouvelle la session a partir d un refresh token valide.
   async refreshTokens(refreshTokenDto: RefreshTokenDto) {
     const payload = await this.verifyRefreshToken(refreshTokenDto.refreshToken);
     const storedToken = await this.findValidStoredRefreshToken(
@@ -121,9 +111,7 @@ export class AuthService {
     return this.createSession(user);
   }
 
-  /**
-   * Revokes an active refresh token so it can no longer be used.
-   */
+  // Revoque le refresh token pour deconnecter l utilisateur.
   async logout(refreshTokenDto: RefreshTokenDto): Promise<{ message: string }> {
     const payload = await this.verifyRefreshToken(refreshTokenDto.refreshToken);
     const storedToken = await this.findValidStoredRefreshToken(
@@ -143,9 +131,7 @@ export class AuthService {
     return { message: 'Deconnexion reussie' };
   }
 
-  /**
-   * Builds signed JWTs and stores the hashed refresh token for rotation/revocation.
-   */
+  // Cree une session JWT avec access token et refresh token.
   private async createSession(user: SafeUser) {
     const payload: JwtPayload = {
       sub: user.id,
@@ -153,11 +139,13 @@ export class AuthService {
       role: user.role,
     };
 
+    // Genere un access token a courte duree de vie pour limiter les risques.
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.getOrThrow<string>('JWT_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m') as StringValue,
+      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '1d') as StringValue,
     });
 
+    // Genere un refresh token a plus longue duree pour permettre le renouvellement de session.
     const refreshToken = await this.jwtService.signAsync(
       { ...payload, jti: randomUUID() },
       {
