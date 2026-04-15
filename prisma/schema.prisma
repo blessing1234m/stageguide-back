@@ -22,6 +22,44 @@ enum AdminAction {
   USER_SOFT_DELETED
 }
 
+enum StatutDemandeMentorat {
+  EN_ATTENTE
+  ACCEPTEE
+  REFUSEE
+  ANNULEE
+}
+
+enum StatutCandidature {
+  EN_ATTENTE
+  EN_COURS
+  ACCEPTEE
+  REFUSEE
+  ANNULEE
+}
+
+enum StatutConvention {
+  BROUILLON
+  EN_ATTENTE_SIGNATURE
+  SIGNEE
+  REFUSEE
+  ANNULEE
+}
+
+enum TypeDocument {
+  CV
+  LETTRE_MOTIVATION
+  CONVENTION
+  ATTESTATION
+  CERTIFICAT
+  AUTRE
+}
+
+enum StatutSessionMentorat {
+  PLANIFIEE
+  TERMINEE
+  ANNULEE
+}
+
 model User {
   id               String           @id @default(uuid())
   email            String           @unique
@@ -44,6 +82,28 @@ model User {
   refreshTokens    RefreshToken[]
   adminActions     AdminAuditLog[]  @relation("AdminActor")
   targetedByAdmins AdminAuditLog[]  @relation("AdminTarget")
+  projetsPortfolio ProjetPortfolio[]
+  demandesMentoratEnTantQueStagiaire DemandeMentorat[] @relation("StagiaireDemandesMentorat")
+  demandesMentoratEnTantQueMentor    DemandeMentorat[] @relation("MentorDemandesMentorat")
+  candidatures     Candidature[]
+  conventions      Convention[]
+  inscriptionsFormations InscriptionFormation[]
+  certificats      Certificat[]
+  notifications    Notification[]
+  cv               Cv?
+  experiencesProfessionnelles ExperienceProfessionnelle[]
+  competences      UtilisateurCompetence[]
+  offresSauvegardees OffreSauvegardee[]
+  progressionsModules ProgressionModule[]
+  objectifsMentorat ObjectifMentorat[]
+  sessionsMentoratCommeStagiaire SessionMentorat[] @relation("SessionsMentoratStagiaire")
+  sessionsMentoratCommeMentor SessionMentorat[] @relation("SessionsMentoratMentor")
+  evaluationsMentoratRecues EvaluationMentorat[] @relation("EvaluationsMentoratStagiaire")
+  evaluationsMentoratDonnees EvaluationMentorat[] @relation("EvaluationsMentoratMentor")
+  documents        Document[]
+  signaturesConvention SignatureConvention[]
+  participationsConversation ParticipantConversation[]
+  messagesEnvoyes  MessageConversation[]
 
   @@index([email])
   @@index([isActive, deletedAt])
@@ -87,8 +147,417 @@ model Partner {
   lienSiteWeb        String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  offresStage        OffreStage[]
+  offresEmploi       OffreEmploi[]
+  conventions        Convention[]
 
   @@index([nomEntreprise])
   @@index([ville])
   @@map("partners")
+}
+
+model ProjetPortfolio {
+  id           String   @id @default(uuid())
+  utilisateurId String
+  titre        String
+  description  String?
+  tags         String[]
+  imageUrl     String?
+  lienProjet   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  utilisateur  User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId, createdAt])
+  @@map("projets_portfolio")
+}
+
+model DemandeMentorat {
+  id          String                @id @default(uuid())
+  stagiaireId String
+  mentorId    String?
+  message     String?
+  statut      StatutDemandeMentorat @default(EN_ATTENTE)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  stagiaire   User                  @relation("StagiaireDemandesMentorat", fields: [stagiaireId], references: [id], onDelete: Cascade)
+  mentor      User?                 @relation("MentorDemandesMentorat", fields: [mentorId], references: [id], onDelete: SetNull)
+
+  @@index([stagiaireId, statut])
+  @@index([mentorId, statut])
+  @@map("demandes_mentorat")
+}
+
+model OffreStage {
+  id            String   @id @default(uuid())
+  partenaireId  String?
+  titre         String
+  description   String
+  ville         String
+  domaine       String?
+  duree         String?
+  remote        Boolean  @default(false)
+  logoUrl       String?
+  datePublication DateTime @default(now())
+  dateExpiration  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  partenaire    Partner? @relation(fields: [partenaireId], references: [id], onDelete: SetNull)
+  candidatures  Candidature[]
+  offresSauvegardees OffreSauvegardee[]
+
+  @@index([ville, domaine])
+  @@index([partenaireId])
+  @@map("offres_stage")
+}
+
+model OffreEmploi {
+  id            String   @id @default(uuid())
+  partenaireId  String?
+  titre         String
+  description   String
+  ville         String
+  domaine       String?
+  typeContrat   String?
+  experience    String?
+  remote        Boolean  @default(false)
+  logoUrl       String?
+  datePublication DateTime @default(now())
+  dateExpiration  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  partenaire    Partner? @relation(fields: [partenaireId], references: [id], onDelete: SetNull)
+  candidatures  Candidature[]
+  offresSauvegardees OffreSauvegardee[]
+
+  @@index([ville, domaine])
+  @@index([partenaireId])
+  @@map("offres_emploi")
+}
+
+model Candidature {
+  id            String             @id @default(uuid())
+  utilisateurId String
+  offreStageId  String?
+  offreEmploiId String?
+  message       String?
+  statut        StatutCandidature  @default(EN_ATTENTE)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  utilisateur   User               @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  offreStage    OffreStage?        @relation(fields: [offreStageId], references: [id], onDelete: SetNull)
+  offreEmploi   OffreEmploi?       @relation(fields: [offreEmploiId], references: [id], onDelete: SetNull)
+
+  @@index([utilisateurId, statut])
+  @@index([offreStageId])
+  @@index([offreEmploiId])
+  @@map("candidatures")
+}
+
+model Convention {
+  id             String           @id @default(uuid())
+  utilisateurId  String
+  partenaireId   String?
+  entrepriseNom  String
+  mentorNom      String?
+  statut         StatutConvention @default(BROUILLON)
+  dateDebut      DateTime?
+  dateFin        DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  utilisateur    User             @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  partenaire     Partner?         @relation(fields: [partenaireId], references: [id], onDelete: SetNull)
+  signatures     SignatureConvention[]
+
+  @@index([utilisateurId, statut])
+  @@index([partenaireId])
+  @@map("conventions")
+}
+
+model Formation {
+  id           String   @id @default(uuid())
+  titre        String
+  description  String?
+  domaine      String?
+  niveau       String?
+  dureeHeures  Int?
+  thumbnailUrl String?
+  estActive    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  inscriptions InscriptionFormation[]
+  modules      ModuleFormation[]
+
+  @@index([titre])
+  @@map("formations")
+}
+
+model InscriptionFormation {
+  id            String    @id @default(uuid())
+  utilisateurId String
+  formationId   String
+  progression   Int       @default(0)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  utilisateur   User      @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  formation     Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+
+  @@unique([utilisateurId, formationId])
+  @@index([formationId])
+  @@map("inscriptions_formations")
+}
+
+model Certificat {
+  id               String   @id @default(uuid())
+  utilisateurId    String
+  titre            String
+  hashVerification String   @unique
+  urlDocument      String?
+  createdAt        DateTime @default(now())
+  utilisateur      User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId, createdAt])
+  @@map("certificats")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  utilisateurId String
+  titre         String
+  message       String
+  estLue        Boolean  @default(false)
+  type          String?
+  createdAt     DateTime @default(now())
+  utilisateur   User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId, estLue, createdAt])
+  @@map("notifications")
+}
+
+model Cv {
+  id                String   @id @default(uuid())
+  utilisateurId     String   @unique
+  titre             String?
+  resume            String?
+  formationResume   String?
+  experienceResume  String?
+  urlPdf            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  utilisateur       User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@map("cv")
+}
+
+model ExperienceProfessionnelle {
+  id              String   @id @default(uuid())
+  utilisateurId   String
+  titrePoste      String
+  entrepriseNom   String
+  description     String?
+  dateDebut       DateTime?
+  dateFin         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  utilisateur     User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId, dateDebut])
+  @@map("experiences_professionnelles")
+}
+
+model Competence {
+  id              String   @id @default(uuid())
+  nom             String   @unique
+  categorie       String?
+  createdAt       DateTime @default(now())
+  utilisateurs    UtilisateurCompetence[]
+
+  @@map("competences")
+}
+
+model UtilisateurCompetence {
+  id              String   @id @default(uuid())
+  utilisateurId   String
+  competenceId    String
+  niveau          Int?
+  createdAt       DateTime @default(now())
+  utilisateur     User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  competence      Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+
+  @@unique([utilisateurId, competenceId])
+  @@index([competenceId])
+  @@map("utilisateurs_competences")
+}
+
+model OffreSauvegardee {
+  id            String   @id @default(uuid())
+  utilisateurId String
+  offreStageId  String?
+  offreEmploiId String?
+  createdAt     DateTime @default(now())
+  utilisateur   User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  offreStage    OffreStage?  @relation(fields: [offreStageId], references: [id], onDelete: SetNull)
+  offreEmploi   OffreEmploi? @relation(fields: [offreEmploiId], references: [id], onDelete: SetNull)
+
+  @@index([utilisateurId, createdAt])
+  @@index([offreStageId])
+  @@index([offreEmploiId])
+  @@map("offres_sauvegardees")
+}
+
+model ModuleFormation {
+  id            String   @id @default(uuid())
+  formationId    String
+  titre         String
+  ordre         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  formation      Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  progressions   ProgressionModule[]
+
+  @@index([formationId, ordre])
+  @@map("modules_formation")
+}
+
+model ProgressionModule {
+  id            String   @id @default(uuid())
+  utilisateurId String
+  moduleId      String
+  estTermine    Boolean  @default(false)
+  termineLe     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  utilisateur   User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  module        ModuleFormation @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([utilisateurId, moduleId])
+  @@index([moduleId])
+  @@map("progressions_module")
+}
+
+model ObjectifMentorat {
+  id            String   @id @default(uuid())
+  utilisateurId String
+  titre         String
+  statut        String   @default("pending")
+  creePar       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  utilisateur   User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId, statut])
+  @@map("objectifs_mentorat")
+}
+
+model SessionMentorat {
+  id            String                @id @default(uuid())
+  stagiaireId   String
+  mentorId      String
+  sujet         String
+  commenceLe    DateTime
+  termineLe     DateTime?
+  statut        StatutSessionMentorat @default(PLANIFIEE)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  stagiaire     User                  @relation("SessionsMentoratStagiaire", fields: [stagiaireId], references: [id], onDelete: Cascade)
+  mentor        User                  @relation("SessionsMentoratMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@index([stagiaireId, commenceLe])
+  @@index([mentorId, commenceLe])
+  @@map("sessions_mentorat")
+}
+
+model EvaluationMentorat {
+  id               String   @id @default(uuid())
+  stagiaireId      String
+  mentorId         String
+  communication    Int?
+  resolutionProblemes Int?
+  adaptabilite     Int?
+  travailEquipe    Int?
+  commentaires     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  stagiaire        User     @relation("EvaluationsMentoratStagiaire", fields: [stagiaireId], references: [id], onDelete: Cascade)
+  mentor           User     @relation("EvaluationsMentoratMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@index([stagiaireId, createdAt])
+  @@index([mentorId, createdAt])
+  @@map("evaluations_mentorat")
+}
+
+model Document {
+  id            String       @id @default(uuid())
+  utilisateurId String
+  nom           String
+  typeMime      String
+  typeDocument  TypeDocument @default(AUTRE)
+  url           String?
+  tailleOctets  Int?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  utilisateur   User         @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  signatures    SignatureConvention[]
+
+  @@index([utilisateurId, typeDocument])
+  @@map("documents")
+}
+
+model SignatureConvention {
+  id            String   @id @default(uuid())
+  conventionId  String
+  utilisateurId String
+  documentId    String?
+  roleSignataire String
+  estSignee     Boolean  @default(false)
+  signeeLe      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  convention    Convention @relation(fields: [conventionId], references: [id], onDelete: Cascade)
+  utilisateur   User       @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  document      Document?  @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([conventionId, roleSignataire])
+  @@index([utilisateurId])
+  @@map("signatures_convention")
+}
+
+model Conversation {
+  id            String   @id @default(uuid())
+  titre         String?
+  creeLe        DateTime @default(now())
+  misAJourLe    DateTime @updatedAt
+  participants  ParticipantConversation[]
+  messages      MessageConversation[]
+
+  @@map("conversations")
+}
+
+model ParticipantConversation {
+  id              String   @id @default(uuid())
+  conversationId  String
+  utilisateurId   String
+  dernierLuLe     DateTime?
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  utilisateur     User         @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, utilisateurId])
+  @@index([utilisateurId])
+  @@map("participants_conversation")
+}
+
+model MessageConversation {
+  id              String   @id @default(uuid())
+  conversationId  String
+  expediteurId    String
+  contenu         String
+  estSysteme      Boolean  @default(false)
+  creeLe          DateTime @default(now())
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  expediteur      User         @relation(fields: [expediteurId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, creeLe])
+  @@index([expediteurId])
+  @@map("messages_conversation")
 }

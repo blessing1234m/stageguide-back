@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AdminModule } from './admin/admin.module';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CorrespondanceModule } from './correspondance/correspondance.module';
+import { FichiersModule } from './fichiers/fichiers.module';
+import { MentorModule } from './mentor/mentor.module';
+import { MessagesModule } from './messages/messages.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { OpportunitesModule } from './opportunites/opportunites.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { StagiaireModule } from './stagiaire/stagiaire.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -14,8 +19,13 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     AuthModule,
     AdminModule,
+    StagiaireModule,
+    MentorModule,
+    OpportunitesModule,
+    CorrespondanceModule,
+    MessagesModule,
+    NotificationsModule,
+    FichiersModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

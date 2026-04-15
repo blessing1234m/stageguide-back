@@ -16,6 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
+import { mapAuthUser } from './utils/auth-user.mapper';
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
@@ -170,7 +171,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      user,
+      user: mapAuthUser(user),
     };
   }
 

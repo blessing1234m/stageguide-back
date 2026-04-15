@@ -19,6 +19,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { mapAuthUser } from './utils/auth-user.mapper';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -63,6 +64,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@CurrentUser() user: unknown) {
-    return user;
+    return mapAuthUser(
+      user as Parameters<typeof mapAuthUser>[0],
+    );
   }
 }
