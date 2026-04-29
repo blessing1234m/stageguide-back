@@ -100,17 +100,17 @@ export class RegisterDto {
   @ApiProperty({
     example: 'StageGuide',
     required: false,
-    description: 'Entreprise du mentor',
+    description: 'Entreprise du mentor ou de l utilisateur ENTREPRISE',
   })
-  @ValidateIf((dto: RegisterDto) => dto.role === UserRole.MENTOR)
   @IsOptional()
   @IsString()
+  @MinLength(1)
   entreprise?: string;
 
   @ApiProperty({
     example: 'Developpeur senior',
     required: false,
-    description: 'Poste du mentor',
+    description: 'Poste du mentor ou du contact entreprise',
   })
   @ValidateIf((dto: RegisterDto) => dto.role === UserRole.MENTOR)
   @IsOptional()

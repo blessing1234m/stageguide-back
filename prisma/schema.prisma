@@ -45,6 +45,13 @@ enum StatutConvention {
   ANNULEE
 }
 
+enum StatutEntretien {
+  PROPOSE
+  CONFIRME
+  ANNULE
+  TERMINE
+}
+
 enum TypeDocument {
   CV
   LETTRE_MOTIVATION
@@ -104,6 +111,8 @@ model User {
   signaturesConvention SignatureConvention[]
   participationsConversation ParticipantConversation[]
   messagesEnvoyes  MessageConversation[]
+  entretiens       Entretien[]
+  partner         Partner?
 
   @@index([email])
   @@index([isActive, deletedAt])
@@ -145,11 +154,14 @@ model Partner {
   ville              String
   email              String   @unique
   lienSiteWeb        String?
+  userId             String?  @unique
+  user               User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   offresStage        OffreStage[]
   offresEmploi       OffreEmploi[]
   conventions        Convention[]
+  entretiens         Entretien[]
 
   @@index([nomEntreprise])
   @@index([ville])
@@ -200,11 +212,13 @@ model OffreStage {
   logoUrl       String?
   datePublication DateTime @default(now())
   dateExpiration  DateTime?
+  isArchived    Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   partenaire    Partner? @relation(fields: [partenaireId], references: [id], onDelete: SetNull)
   candidatures  Candidature[]
   offresSauvegardees OffreSauvegardee[]
+  entretiens     Entretien[]
 
   @@index([ville, domaine])
   @@index([partenaireId])
@@ -224,11 +238,13 @@ model OffreEmploi {
   logoUrl       String?
   datePublication DateTime @default(now())
   dateExpiration  DateTime?
+  isArchived    Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   partenaire    Partner? @relation(fields: [partenaireId], references: [id], onDelete: SetNull)
   candidatures  Candidature[]
   offresSauvegardees OffreSauvegardee[]
+  entretiens     Entretien[]
 
   @@index([ville, domaine])
   @@index([partenaireId])
@@ -247,11 +263,35 @@ model Candidature {
   utilisateur   User               @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
   offreStage    OffreStage?        @relation(fields: [offreStageId], references: [id], onDelete: SetNull)
   offreEmploi   OffreEmploi?       @relation(fields: [offreEmploiId], references: [id], onDelete: SetNull)
+  entretiens     Entretien[]
 
   @@index([utilisateurId, statut])
   @@index([offreStageId])
   @@index([offreEmploiId])
   @@map("candidatures")
+}
+
+model Entretien {
+  id            String             @id @default(uuid())
+  partenaireId  String
+  candidatureId  String
+  offreStageId  String?
+  offreEmploiId String?
+  utilisateurId String
+  dateProposee  DateTime
+  lieu          String?
+  message       String?
+  statut        StatutEntretien   @default(PROPOSE)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  partenaire    Partner            @relation(fields: [partenaireId], references: [id], onDelete: Cascade)
+  candidature    Candidature        @relation(fields: [candidatureId], references: [id], onDelete: Cascade)
+  offreStage    OffreStage?        @relation(fields: [offreStageId], references: [id], onDelete: SetNull)
+  offreEmploi   OffreEmploi?       @relation(fields: [offreEmploiId], references: [id], onDelete: SetNull)
+  utilisateur   User               @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([partenaireId, statut])
+  @@map("entretiens")
 }
 
 model Convention {

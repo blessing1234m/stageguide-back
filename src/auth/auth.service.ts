@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -53,6 +54,10 @@ export class AuthService {
 
     if (existingUser) {
       throw new ConflictException('Un compte existe deja avec cet email');
+    }
+
+    if (registerDto.role === UserRole.ENTREPRISE && !registerDto.entreprise) {
+      throw new BadRequestException('Le role ENTREPRISE requiert un nom d entreprise');
     }
 
     const passwordHash = await bcrypt.hash(registerDto.password, 12);
